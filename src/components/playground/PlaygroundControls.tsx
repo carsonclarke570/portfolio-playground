@@ -79,7 +79,7 @@ export default function PlaygroundControls() {
                 </div>
 
                 {/* Description */}
-                <p className="md:overflow-none overflow-scroll sm:max-h-auto max-h-40">
+                <p className="md:overflow-auto overflow-scroll sm:max-h-auto max-h-40">
                     {description}
                 </p>
             </div>
