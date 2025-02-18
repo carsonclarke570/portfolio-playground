@@ -153,21 +153,24 @@ export default function ControlsProvider({ children }: {
             applyDepthBufferPreset,
             applyNormalBufferPreset
         }}>
-            <Leva
-                titleBar={{
-                    drag: false,
-                }}
-                theme={{
-                    colors: {
-                        elevation1: "var(--color-zinc-700)",
-                        elevation2: "var(--color-zinc-800)",
-                        elevation3: "var(--color-zinc-700)",
-                        accent2: "var(--color-emerald-500)",
-                        accent3: "var(--color-emerald-600)",
-                        folderTextColor: "var(--color-zinc-100)",
-                    },
-                }}
-            />
+            <div className="xl:flex hidden">
+                <Leva
+                    titleBar={{
+                        drag: false,
+                    }}
+                    theme={{
+                        colors: {
+                            elevation1: "var(--color-zinc-700)",
+                            elevation2: "var(--color-zinc-800)",
+                            elevation3: "var(--color-zinc-700)",
+                            accent2: "var(--color-emerald-500)",
+                            accent3: "var(--color-emerald-600)",
+                            folderTextColor: "var(--color-zinc-100)",
+                        },
+                    }}
+                />
+            </div>
+
             {children}
         </ControlsContext.Provider>
     )

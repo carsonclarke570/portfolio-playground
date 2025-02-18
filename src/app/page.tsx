@@ -3,7 +3,7 @@ import PlaygroundControls from "@/components/playground/PlaygroundControls"
 export default function Home() {
     return (
         <div className="fixed top-0 m-4">
-            <div className="flex flex-col space-y-4">
+            <div className="xl:flex flex-col space-y-4 hidden">
                 <Controls />
                 <PlaygroundControls />
             </div>

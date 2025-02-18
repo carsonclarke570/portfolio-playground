@@ -3,6 +3,7 @@ import "./globals.css";
 import ControlsProvider from "@/providers/controls";
 import Window from "@/components/three/Window";
 import { Roboto_Mono } from 'next/font/google'
+import CameraProvider from "@/providers/camera";
 
 const roboto = Roboto_Mono({
   subsets: ['latin'],
@@ -25,8 +26,10 @@ export default function RootLayout({
       <body className={`${roboto.className} antialiased h-lvh`}>
 
         <ControlsProvider>
-          <Window />
-          {children}
+          <CameraProvider>
+            <Window />
+            {children}
+          </CameraProvider>
         </ControlsProvider>
       </body>
     </html>

@@ -82,7 +82,7 @@ export function useIsoSnap(position: THREE.Vector3, tileTexelWidth: number): {
         return {
             snappedPosition, subpixelOffset
         }
-    }, [position.x, position.y, position.z, tileTexelWidth, camera])
+    }, [position, position.x, position.y, position.z, tileTexelWidth, camera])
 }
 
 export function useSmoothVector(target: THREE.Vector3, speed: number = 0.1) {

@@ -9,22 +9,26 @@ import { useControlScheme } from "@/providers/controls";
 import DepthDebugView from "./postfx/DepthDebugView";
 import { Instance, Instances } from "@react-three/drei";
 import { TILE_SIDE_LENGTH_WORLD } from "@/utils/constants";
+import { useSwipeable } from "react-swipeable";
+import { useCameraControls } from "@/providers/camera";
 
 export default function ThreeCanvas() {
 
     const controls = useControlScheme()
+    const { rotateLeft, rotateRight } = useCameraControls()
+
+    const swipeHandlers = useSwipeable({
+        onSwipedLeft: () => rotateLeft(),
+        onSwipedRight: () => rotateRight(),
+    })
 
     return (
         <Canvas
             style={{ width: '100vw', height: '100vh' }}
             gl={{ antialias: false }} // Turn off antialias for a crisper pixel look.
-
+            {...swipeHandlers}
         >
-            <CameraRig
-                initialPosition={new THREE.Vector3(0, 0, 0)}
-                distance={15}
-            />
-
+            <CameraRig distance={15} />
             <Scene />
 
             {/* PostFX */}

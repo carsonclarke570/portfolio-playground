@@ -1,27 +1,27 @@
 "use client"
 
+import { useCameraControls } from '@/providers/camera';
 import { useControlScheme } from '@/providers/controls';
 import { useIsoSnap, useResolution, useSmoothScalar } from '@/utils/hooks';
 import { OrthographicCamera, useFBO } from '@react-three/drei';
 import { useFrame, useThree } from '@react-three/fiber';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three'
 
-export default function CameraRig({ initialPosition, distance }: {
+export default function CameraRig({ distance }: {
     distance: number;
-    initialPosition: THREE.Vector3;
 }) {
-    const [realPosition, setRealPosition] = useState(initialPosition);
-    const [orbitAngle, setOrbitAngle] = useState(45);
 
     const { pixelationControls, cameraControls } = useControlScheme()
-    const { snappedPosition, subpixelOffset } = useIsoSnap(realPosition, pixelationControls.tileTexelWidth)
+    const { position, angle, setPosition, rotateLeft, rotateRight } = useCameraControls()
+
+    const { snappedPosition, subpixelOffset } = useIsoSnap(position, pixelationControls.tileTexelWidth)
     const { orthoWidth, orthoHeight } = useResolution(pixelationControls.texelSize, pixelationControls.tileTexelWidth)
 
     const rigRef = useRef<THREE.Group>(null);
     const cameraRef = useRef<THREE.OrthographicCamera>(null);
 
-    const smoothOrbitAngle = useSmoothScalar(orbitAngle, 3)
+    const smoothOrbitAngle = useSmoothScalar(angle, 3)
 
     const handleKeyDown = useCallback((event: KeyboardEvent) => {
         const moveDirection = new THREE.Vector3();
@@ -40,10 +40,10 @@ export default function CameraRig({ initialPosition, distance }: {
                 moveDirection.set(cameraControls.moveSpeed, 0, 0);
                 break;
             case "q":
-                setOrbitAngle(orbitAngle - 90)
+                rotateLeft()
                 break;
             case "e":
-                setOrbitAngle(orbitAngle + 90)
+                rotateRight()
                 break;
             default:
                 return;
@@ -52,10 +52,10 @@ export default function CameraRig({ initialPosition, distance }: {
         const rotationMatrix = new THREE.Matrix4().makeRotationY(THREE.MathUtils.degToRad(smoothOrbitAngle));
         moveDirection.applyMatrix4(rotationMatrix);
 
-        const newPosition = realPosition.clone().add(moveDirection);
-        setRealPosition(newPosition)
+        const newPosition = position.clone().add(moveDirection);
+        setPosition(newPosition)
 
-    }, [cameraControls.moveSpeed, orbitAngle, smoothOrbitAngle, realPosition])
+    }, [cameraControls.moveSpeed, smoothOrbitAngle, position, rotateLeft, rotateRight, setPosition])
 
     useEffect(() => {
         window.addEventListener("keydown", handleKeyDown);
