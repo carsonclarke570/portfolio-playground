@@ -55,7 +55,7 @@ export default function CameraRig({ initialPosition, distance }: {
         const newPosition = realPosition.clone().add(moveDirection);
         setRealPosition(newPosition)
 
-    }, [cameraControls.moveSpeed, smoothOrbitAngle, realPosition])
+    }, [cameraControls.moveSpeed, orbitAngle, smoothOrbitAngle, realPosition])
 
     useEffect(() => {
         window.addEventListener("keydown", handleKeyDown);
@@ -91,7 +91,7 @@ export default function CameraRig({ initialPosition, distance }: {
                         makeDefault
                         ref={cameraRef}
                         near={0.01}
-                        far={20}
+                        far={50}
                         position={[0, 0, distance]}
                     />
                 </group>

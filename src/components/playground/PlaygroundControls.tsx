@@ -30,11 +30,11 @@ export default function PlaygroundControls() {
             description: "The depth buffer stores the distance from the camera the scene is at each pixel. The GPU uses this to determine what 3D objects are in the front of the scene but it also gives us valuable information for some of our post-processing effects.",
             onSelect: controls.applyDepthBufferPreset
         },
-        {
-            label: "Normal Buffer",
-            description: "The normal buffer stores the direction the surface found at each pixel is facing. This gives us valuable information for both lighting and post-processing effects.",
-            onSelect: controls.applyNormalBufferPreset
-        }
+        // {
+        //     label: "Normal Buffer",
+        //     description: "The normal buffer stores the direction the surface found at each pixel is facing. This gives us valuable information for both lighting and post-processing effects.",
+        //     onSelect: controls.applyNormalBufferPreset
+        // }
     ]
 
     return (
@@ -43,7 +43,11 @@ export default function PlaygroundControls() {
         }}>
             <button
                 className="absolute mt-2 ml-4 border px-2 rounded-sm text-sm text-zinc-100 hover:bg-emerald-600/30 hover:border-emerald-300"
-                onClick={() => { controls.reset() }}
+                onClick={() => {
+                    setDescripton(DEFAULT_DESCRIPTION)
+                    setActiveEffectIndex(-1)
+                    controls.reset()
+                }}
             >
                 Reset
             </button>

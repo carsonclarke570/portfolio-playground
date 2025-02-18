@@ -1,12 +1,14 @@
 "use client"
 
-import { Canvas, useThree } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from 'three'
 import { degToRad } from "three/src/math/MathUtils.js";
 import CameraRig from "./CameraRig";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useControlScheme } from "@/providers/controls";
 import DepthDebugView from "./postfx/DepthDebugView";
+import { Instance, Instances } from "@react-three/drei";
+import { TILE_SIDE_LENGTH_WORLD } from "@/utils/constants";
 
 export default function ThreeCanvas() {
 
@@ -34,14 +36,71 @@ export default function ThreeCanvas() {
     )
 }
 
-function Scene() {
-    const { gl } = useThree()
-    const { lightingControls, pixelationControls } = useControlScheme()
+const TILE_HEIGHT_MAP = [
+    [1, 1, 1, 1, 1, 1, 1],
+    [1, 3, 2, 2, 2, 3, 1],
+    [1, 2, 2, 2, 2, 2, 1],
+    [1, 1, 2, 3, 2, 1, 1],
+    [1, 2, 2, 2, 2, 2, 1],
+    [1, 3, 2, 1, 2, 3, 1],
+    [1, 1, 1, 1, 1, 1, 1],
+]
 
-    const h = useMemo(() => {
+function TileMap() {
+
+    const { pixelationControls } = useControlScheme()
+
+    const tileHeight = useMemo(() => {
         const worldToTexelRatio = Math.SQRT2 / pixelationControls.tileTexelWidth;
         return pixelationControls.tileTexelHeight * (worldToTexelRatio / Math.cos(degToRad(30)))
     }, [pixelationControls.tileTexelHeight, pixelationControls.tileTexelWidth])
+
+    const instances = TILE_HEIGHT_MAP.reduce((total, row) => {
+        return total + row.reduce((sum, height) => {
+            return sum + height
+        }, 0)
+    }, 0)
+
+    return (
+        <Instances limit={instances}>
+            <boxGeometry args={[1, tileHeight, 1]} />
+            <meshStandardMaterial color="green" depthTest={true} side={THREE.BackSide} />
+            {TILE_HEIGHT_MAP.map((row, z) => {
+                return row.map((height, x) => {
+
+                    return [...Array(height).keys()].map((y) => {
+                        const xPos = (x - 3) * TILE_SIDE_LENGTH_WORLD
+                        const yPos = y * tileHeight
+                        const zPos = (z - 3) * TILE_SIDE_LENGTH_WORLD
+
+                        return (
+                            <Instance
+                                key={`${x}-${z}-${y}`}
+                                position={[xPos, yPos, zPos]}
+                            />
+                        )
+                    })
+                })
+            })}
+        </Instances>
+    )
+}
+
+function Scene() {
+    const { gl } = useThree()
+    const { lightingControls } = useControlScheme()
+
+    const pointlightRef = useRef<THREE.PointLight>(null)
+    const timeRef = useRef(0)
+
+    useFrame((_, delta) => {
+        if (pointlightRef.current) {
+            timeRef.current += (delta * 2.0)
+
+            const y = Math.sin(timeRef.current) * 0.5
+            pointlightRef.current.position.y = y
+        }
+    })
 
     // Setup GL Context
     useEffect(() => {
@@ -57,20 +116,9 @@ function Scene() {
             {/* Directional Light */}
             <directionalLight position={[-1, -1, 0]}></directionalLight>
 
-            <mesh position={[-1, -h / 2, 0]}>
-                <boxGeometry args={[1, h, 1]} />
-                <meshStandardMaterial color="blue" depthTest={true} side={THREE.BackSide} />
-            </mesh>
+            <pointLight ref={pointlightRef} position={[0, 2.0, 0]} intensity={4.0} />
 
-            <mesh position={[0, -h / 2, 0]}>
-                <boxGeometry args={[1, h, 1]} />
-                <meshStandardMaterial color="green" depthTest={true} side={THREE.BackSide} />
-            </mesh>
-
-            <mesh position={[1, -h / 2, 0]}>
-                <boxGeometry args={[1, h, 1]} />
-                <meshStandardMaterial color="red" depthTest={true} side={THREE.BackSide} />
-            </mesh>
+            <TileMap />
         </>
 
     )

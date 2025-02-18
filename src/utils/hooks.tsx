@@ -30,7 +30,7 @@ export function useResolution(texelSize: number, tileTexelWidth: number) {
         console.log("Corrected Internal Width: " + internalWidth)
 
         return { internalWidth, internalHeight, displayWidth, displayHeight, orthoWidth, orthoHeight }
-    }, [size])
+    }, [size, texelSize, tileTexelWidth])
 }
 
 function createIsoMatrices(camera: THREE.Camera, tileTexelWidth: number) {
