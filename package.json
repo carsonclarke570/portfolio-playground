@@ -12,10 +12,11 @@
     "@react-three/drei": "10.0.0-rc.1",
     "@react-three/fiber": "9.0.0-rc.5",
     "@tailwindcss/postcss": "^4.0.6",
+    "classnames": "^2.5.1",
     "leva": "^0.10.0",
+    "next": "15.1.6",
     "react": "19.0.0",
     "react-dom": "19.0.0",
-    "next": "15.1.6",
     "three": "0.173.0"
   },
   "devDependencies": {

@@ -1,76 +1,47 @@
 "use client"
 
 import { Canvas, useThree } from "@react-three/fiber";
-import { useControls } from "leva";
 import * as THREE from 'three'
 import { degToRad } from "three/src/math/MathUtils.js";
 import CameraRig from "./CameraRig";
-import { useEffect } from "react";
-import { TILE_DIAGONAL_WORLD, TILE_SIDE_LENGTH_WORLD } from "@/utils/constants";
-import PixelationEffect from "./postfx/PixelationEffect";
-
-function tileWorldHeight(tileTexelHeight: number, tileTexelWidth: number) {
-    const worldToTexelRatio = TILE_DIAGONAL_WORLD / tileTexelWidth;
-    return tileTexelHeight * (worldToTexelRatio / Math.cos(degToRad(30)))
-}
+import { useEffect, useMemo } from "react";
+import { useControlScheme } from "@/providers/controls";
+import DepthDebugView from "./postfx/DepthDebugView";
 
 export default function ThreeCanvas() {
 
-    const controls = useControls('Pixelation', {
-        texelSize: {
-            label: "Texel Size",
-            value: 4
-        },
-        tileTexelWidth: {
-            label: "Tile Width",
-            value: 16
-        }
-    })
+    const controls = useControlScheme()
 
     return (
         <Canvas
             style={{ width: '100vw', height: '100vh' }}
-            gl={{ antialias: false, depth: true }} // Turn off antialias for a crisper pixel look.
+            gl={{ antialias: false }} // Turn off antialias for a crisper pixel look.
 
         >
-
             <CameraRig
                 initialPosition={new THREE.Vector3(0, 0, 0)}
-                distance={5}
-                texelSize={controls.texelSize}
-                tileTexelWidth={controls.tileTexelWidth}
+                distance={15}
             />
 
-            <Scene tileTexelWidth={controls.tileTexelWidth} />
+            <Scene />
 
             {/* PostFX */}
             <>
-                {/* <PixelationEffect texelSize={controls.texelSize} /> */}
-                {/* <DepthDebugView texelSize={controls.texelSize} /> */}
+                {controls.framebufferControls.showDepth && <DepthDebugView texelSize={controls.pixelationControls.texelSize} tileTexelWidth={controls.pixelationControls.tileTexelWidth} />}
             </>
 
         </Canvas>
     )
 }
 
-
-function Scene({ tileTexelWidth }: {
-    tileTexelWidth: number;
-}) {
-
+function Scene() {
     const { gl } = useThree()
+    const { lightingControls, pixelationControls } = useControlScheme()
 
-    const controls = useControls('Lighting', {
-        ambientLightStrength: {
-            label: "Ambient Intensity",
-            value: 2.0,
-            min: 0.0,
-            max: 5.0,
-            step: 0.05
-        }
-    })
-
-    const h = tileWorldHeight(4, tileTexelWidth)
+    const h = useMemo(() => {
+        const worldToTexelRatio = Math.SQRT2 / pixelationControls.tileTexelWidth;
+        return pixelationControls.tileTexelHeight * (worldToTexelRatio / Math.cos(degToRad(30)))
+    }, [pixelationControls.tileTexelHeight, pixelationControls.tileTexelWidth])
 
     // Setup GL Context
     useEffect(() => {
@@ -81,22 +52,23 @@ function Scene({ tileTexelWidth }: {
     return (
         <>
             {/* Ambient Light */}
-            <ambientLight intensity={controls.ambientLightStrength} />
-            <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} decay={0} intensity={Math.PI} />
-            <pointLight position={[-10, -10, -10]} decay={0} intensity={Math.PI} />
+            <ambientLight intensity={lightingControls.ambientStrength} color={lightingControls.ambientColor} />
 
-            <mesh position={[-1, 0, 0]}>
-                <boxGeometry args={[TILE_SIDE_LENGTH_WORLD, h, TILE_SIDE_LENGTH_WORLD]} />
+            {/* Directional Light */}
+            <directionalLight position={[-1, -1, 0]}></directionalLight>
+
+            <mesh position={[-1, -h / 2, 0]}>
+                <boxGeometry args={[1, h, 1]} />
                 <meshStandardMaterial color="blue" depthTest={true} side={THREE.BackSide} />
             </mesh>
 
-            <mesh position={[0, 0, 0]}>
-                <boxGeometry args={[TILE_SIDE_LENGTH_WORLD, h, TILE_SIDE_LENGTH_WORLD]} />
+            <mesh position={[0, -h / 2, 0]}>
+                <boxGeometry args={[1, h, 1]} />
                 <meshStandardMaterial color="green" depthTest={true} side={THREE.BackSide} />
             </mesh>
 
-            <mesh position={[1, 0, 0]}>
-                <boxGeometry args={[TILE_SIDE_LENGTH_WORLD, h, TILE_SIDE_LENGTH_WORLD]} />
+            <mesh position={[1, -h / 2, 0]}>
+                <boxGeometry args={[1, h, 1]} />
                 <meshStandardMaterial color="red" depthTest={true} side={THREE.BackSide} />
             </mesh>
         </>

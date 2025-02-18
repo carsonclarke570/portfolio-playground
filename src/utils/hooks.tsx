@@ -2,25 +2,35 @@ import * as THREE from 'three'
 
 import { useFrame, useThree } from "@react-three/fiber"
 import { useEffect, useMemo, useRef, useState } from "react"
-import { TILE_DIAGONAL_WORLD } from './constants'
 
-export function useInternalSize(texelSize: number) {
+export function useResolution(texelSize: number, tileTexelWidth: number) {
     const { size } = useThree()
 
     return useMemo(() => {
-        const internalWidth = Math.floor(size.width / texelSize)
-        const internalHeight = Math.floor(size.height / texelSize)
 
-        return { internalWidth, internalHeight }
+        // The internal width should always be even
+        const possibleInternalWidth = Math.floor(size.width / texelSize)
+        const internalWidthOffset = possibleInternalWidth % 2 == 0 ? 0 : 1
+        const internalWidth = possibleInternalWidth - internalWidthOffset
+
+        // The internal height should always be odd
+        const possibleInternalHeight = Math.floor(size.height / texelSize)
+        const internalHeightOffset = possibleInternalHeight % 2 == 0 ? 1 : 0
+        const internalHeight = possibleInternalHeight - internalHeightOffset
+
+        const displayWidth = internalWidth * texelSize
+        const displayHeight = internalHeight * texelSize
+
+        const orthoWidth = Math.SQRT2 * (internalWidth / tileTexelWidth); // 
+        const orthoHeight = orthoWidth * (internalHeight / internalWidth);
+
+        // DEBUG
+        console.log("Internal Width: " + possibleInternalWidth)
+        console.log("Internal Height: " + internalHeight)
+        console.log("Corrected Internal Width: " + internalWidth)
+
+        return { internalWidth, internalHeight, displayWidth, displayHeight, orthoWidth, orthoHeight }
     }, [size])
-}
-
-export function useDisplaySize(texelSize: number) {
-    const { internalWidth, internalHeight } = useInternalSize(texelSize)
-    const displayWidth = internalWidth * texelSize
-    const displayHeight = internalHeight * texelSize
-
-    return { displayWidth, displayHeight }
 }
 
 function createIsoMatrices(camera: THREE.Camera, tileTexelWidth: number) {
@@ -34,10 +44,11 @@ function createIsoMatrices(camera: THREE.Camera, tileTexelWidth: number) {
     const camRight = new THREE.Vector3();
     camRight.crossVectors(worldUp, camForward).normalize();
 
-    const worldToTexelRatio = (1.0 / tileTexelWidth);
+    const worldToTexelRatio = (Math.SQRT2 / tileTexelWidth);
     const isoRight = camRight.clone().multiplyScalar(worldToTexelRatio)
     const isoForward = camForward.clone().multiplyScalar(worldToTexelRatio * 2)
     const isoUp = worldUp.clone().multiplyScalar(worldToTexelRatio / Math.sqrt(3))
+    const origin = camForward.clone().multiplyScalar(worldToTexelRatio)
 
     const isoToWorld = new THREE.Matrix3();
     isoToWorld.set(
@@ -48,7 +59,7 @@ function createIsoMatrices(camera: THREE.Camera, tileTexelWidth: number) {
 
     const worldToIso = new THREE.Matrix3().copy(isoToWorld).invert();
 
-    return { isoToWorld, worldToIso }
+    return { isoToWorld, worldToIso, origin }
 }
 
 export function useIsoSnap(position: THREE.Vector3, tileTexelWidth: number): {
@@ -57,14 +68,13 @@ export function useIsoSnap(position: THREE.Vector3, tileTexelWidth: number): {
 } {
     const { camera } = useThree();
     return useMemo(() => {
-        const { isoToWorld, worldToIso } = createIsoMatrices(camera, tileTexelWidth)
-        const worldToTexelRatio = (1.0 / tileTexelWidth);
+        const { isoToWorld, worldToIso, origin } = createIsoMatrices(camera, tileTexelWidth)
 
         const isoPos = position.clone().applyMatrix3(worldToIso);
         const isoPosSnapped = isoPos.clone().round();
+        isoPosSnapped.add(origin)
 
-        const offset = isoPos.clone().sub(isoPosSnapped);
-        // const offsetNormalized = offset.multiplyScalar(worldToTexelRatio);
+        const offset = isoPos.clone().add(origin).sub(isoPosSnapped);
         const subpixelOffset = new THREE.Vector2(offset.x, offset.y)
 
         const snappedPosition = isoPosSnapped.applyMatrix3(isoToWorld);

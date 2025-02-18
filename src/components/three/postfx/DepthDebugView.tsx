@@ -1,23 +1,24 @@
-import { useInternalSize } from "@/utils/hooks";
+import { useResolution } from "@/utils/hooks";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from 'three'
 import { useFBO } from "@react-three/drei";
 import { useEffect, useMemo } from "react";
 
-export default function DepthDebugView({ texelSize }: {
-    texelSize: number
+export default function DepthDebugView({ texelSize, tileTexelWidth }: {
+    texelSize: number,
+    tileTexelWidth: number
 }) {
     const { gl, scene, camera } = useThree()
-    const { internalWidth, internalHeight } = useInternalSize(texelSize);
+    const { displayWidth, displayHeight } = useResolution(texelSize, tileTexelWidth);
 
     const depthTexture = useMemo(() => {
-        const dt = new THREE.DepthTexture(internalWidth, internalHeight);
+        const dt = new THREE.DepthTexture(displayWidth, displayHeight);
         dt.format = THREE.DepthFormat;
         dt.type = THREE.UnsignedShortType; // or THREE.FloatType if you prefer
         return dt;
-    }, [internalWidth, internalHeight]);
+    }, [displayWidth, displayHeight]);
 
-    const fbo = useFBO(internalWidth, internalHeight, {
+    const fbo = useFBO(displayWidth, displayHeight, {
         depthBuffer: true,
         depthTexture: depthTexture
     })
