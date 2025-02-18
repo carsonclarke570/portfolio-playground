@@ -3,7 +3,7 @@ import PlaygroundControls from "@/components/playground/PlaygroundControls"
 export default function Home() {
     return (
         <div className="fixed top-0 m-4">
-            <div className="xl:flex flex-col space-y-4 hidden">
+            <div className="flex flex-col space-y-4">
                 <Controls />
                 <PlaygroundControls />
             </div>
@@ -13,7 +13,7 @@ export default function Home() {
 
 function Controls() {
     return (
-        <div className="rounded-lg bg-zinc-800 text-zinc-100" style={{
+        <div className="xl:flex flex-col rounded-lg bg-zinc-800 text-zinc-100 hidden" style={{
             boxShadow: "0 0 9px 0 #00000088"
         }}>
             <h1 className="text-sm text-center bg-zinc-700 p-2 rounded-t-lg">Keyboard Controls</h1>

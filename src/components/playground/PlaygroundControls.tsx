@@ -38,7 +38,7 @@ export default function PlaygroundControls() {
     ]
 
     return (
-        <div className="rounded-lg bg-zinc-800 text-zinc-100 max-w-xs" style={{
+        <div className="flex flex-col md:rounded-lg bg-zinc-800 text-zinc-100 md:max-w-xs xl:static fixed xl:bottom-auto md:bottom-4 bottom-0 md:mr-0 mr-4 md:w-auto w-full md:left-auto left-0" style={{
             boxShadow: "0 0 9px 0 #00000088"
         }}>
             <button
@@ -52,7 +52,7 @@ export default function PlaygroundControls() {
                 Reset
             </button>
 
-            <h1 className="text-sm text-center bg-zinc-700 p-2 rounded-t-lg">Playground</h1>
+            <h1 className="text-sm text-center bg-zinc-700 p-2 md:rounded-t-lg">Playground</h1>
 
             <div className="flex flex-col text-xs py-4 px-4 space-y-4">
 
@@ -79,7 +79,7 @@ export default function PlaygroundControls() {
                 </div>
 
                 {/* Description */}
-                <p>
+                <p className="md:overflow-none overflow-scroll sm:max-h-auto max-h-40">
                     {description}
                 </p>
             </div>

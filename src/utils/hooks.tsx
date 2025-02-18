@@ -25,9 +25,9 @@ export function useResolution(texelSize: number, tileTexelWidth: number) {
         const orthoHeight = orthoWidth * (internalHeight / internalWidth);
 
         // DEBUG
-        console.log("Internal Width: " + possibleInternalWidth)
-        console.log("Internal Height: " + internalHeight)
-        console.log("Corrected Internal Width: " + internalWidth)
+        // console.log("Internal Width: " + possibleInternalWidth)
+        // console.log("Internal Height: " + internalHeight)
+        // console.log("Corrected Internal Width: " + internalWidth)
 
         return { internalWidth, internalHeight, displayWidth, displayHeight, orthoWidth, orthoHeight }
     }, [size, texelSize, tileTexelWidth])
@@ -82,7 +82,7 @@ export function useIsoSnap(position: THREE.Vector3, tileTexelWidth: number): {
         return {
             snappedPosition, subpixelOffset
         }
-    }, [position, position.x, position.y, position.z, tileTexelWidth, camera])
+    }, [position, tileTexelWidth, camera])
 }
 
 export function useSmoothVector(target: THREE.Vector3, speed: number = 0.1) {
