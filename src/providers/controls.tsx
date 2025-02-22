@@ -4,8 +4,7 @@ import { Leva, useControls } from "leva"
 import { createContext, useContext, useMemo } from "react"
 
 type FramebufferControls = {
-    showDepth: boolean;
-    showNormals: boolean;
+    buffer: string
 }
 
 type PixelationControls = {
@@ -24,10 +23,14 @@ type CameraControls = {
     moveSpeed: number;
 }
 
+export const FRAMEBUFFER_ALBEDO = "Albedo"
+export const FRAMEBUFFER_NORMAL = "Normal"
+export const FRAMEBUFFER_DEPTH = "Depth"
+export const FRAMEBUFFER_RESULT = "Result"
+
 const DEFAULT_VALUES = {
     framebufferControls: {
-        showDepth: false,
-        showNormals: false
+        buffer: FRAMEBUFFER_RESULT
     },
     pixelationControls: {
         enabled: true,
@@ -36,7 +39,7 @@ const DEFAULT_VALUES = {
         tileTexelHeight: 4
     },
     lightingControls: {
-        ambientStrength: 2.0,
+        ambientStrength: 0.2,
         ambientColor: '#ffffff'
     },
     cameraControls: {
@@ -68,8 +71,7 @@ export default function ControlsProvider({ children }: {
 
     const framebufferOptions = useMemo(() => {
         return {
-            showDepth: { label: "Show Depth", value: DEFAULT_VALUES.framebufferControls.showDepth },
-            showNormals: { label: "Show Normals", value: DEFAULT_VALUES.framebufferControls.showNormals }
+            buffer: { label: "Buffer", options: [FRAMEBUFFER_ALBEDO, FRAMEBUFFER_NORMAL, FRAMEBUFFER_DEPTH, FRAMEBUFFER_RESULT], value: FRAMEBUFFER_RESULT }
         }
     }, [])
 
@@ -92,7 +94,7 @@ export default function ControlsProvider({ children }: {
                 label: "Ambient Intensity",
                 value: DEFAULT_VALUES.lightingControls.ambientStrength,
                 min: 0.0,
-                max: 5.0,
+                max: 1.0,
                 step: 0.05
             }
         }
@@ -130,15 +132,13 @@ export default function ControlsProvider({ children }: {
 
     const applyDepthBufferPreset = () => {
         setFramebufferControls({
-            showDepth: true,
-            showNormals: false
+            buffer: FRAMEBUFFER_DEPTH
         })
     }
 
     const applyNormalBufferPreset = () => {
         setFramebufferControls({
-            showDepth: false,
-            showNormals: true
+            buffer: FRAMEBUFFER_NORMAL
         })
     }
 
