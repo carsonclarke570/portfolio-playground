@@ -16,18 +16,19 @@ export function DeferredLightingPass({ gBuffer, resultBuffer }: {
         uniforms: {
             tAlbedo: { value: gBuffer.textures[0] },
             tNormal: { value: gBuffer.textures[1] },
+            tPosition: { value: gBuffer.textures[2] },
             tDepth: { value: gBuffer.depthTexture },
 
-            sunIntensity: { value: 1.0 },
+            sunIntensity: { value: lightingControls.sunStrength },
             sunDir: { value: new THREE.Vector3(1, 2, 1).normalize() },
-            sunColor: { value: new THREE.Vector3(1, 1, 1) },
+            sunColor: { value: new THREE.Color(lightingControls.sunColor) },
 
             ambientIntensity: { value: lightingControls.ambientStrength },
             ambientColor: { value: new THREE.Color(lightingControls.ambientColor) },
         },
         depthTest: false,
         depthWrite: false,
-    }), [gBuffer, lightingControls])
+    }), [gBuffer, lightingControls.sunStrength, lightingControls.sunColor, lightingControls.ambientStrength, lightingControls.ambientColor])
 
     // Render the full-screen quad in a separate scene.
     const quadScene = useMemo(() => {

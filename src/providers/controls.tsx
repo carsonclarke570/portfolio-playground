@@ -17,6 +17,8 @@ type PixelationControls = {
 type LightingControls = {
     ambientStrength: number;
     ambientColor: string;
+    sunStrength: number;
+    sunColor: string;
 }
 
 type CameraControls = {
@@ -26,6 +28,7 @@ type CameraControls = {
 export const FRAMEBUFFER_ALBEDO = "Albedo"
 export const FRAMEBUFFER_NORMAL = "Normal"
 export const FRAMEBUFFER_DEPTH = "Depth"
+export const FRAMEBUFFER_POSITION = "Position"
 export const FRAMEBUFFER_RESULT = "Result"
 
 const DEFAULT_VALUES = {
@@ -40,7 +43,9 @@ const DEFAULT_VALUES = {
     },
     lightingControls: {
         ambientStrength: 0.2,
-        ambientColor: '#ffffff'
+        ambientColor: '#ffffff',
+        sunStrength: 0.5,
+        sunColor: '#ffffff',
     },
     cameraControls: {
         moveSpeed: 0.05
@@ -53,13 +58,13 @@ const ControlsContext = createContext<{
     lightingControls: LightingControls,
     cameraControls: CameraControls,
     reset: () => void,
-    applySourceImagePreset: () => void,
+    applyAlbedoBufferPreset: () => void,
     applyDepthBufferPreset: () => void,
     applyNormalBufferPreset: () => void,
 }>({
     ...DEFAULT_VALUES,
     reset: () => { },
-    applySourceImagePreset: () => { },
+    applyAlbedoBufferPreset: () => { },
     applyDepthBufferPreset: () => { },
     applyNormalBufferPreset: () => { }
 });
@@ -71,7 +76,7 @@ export default function ControlsProvider({ children }: {
 
     const framebufferOptions = useMemo(() => {
         return {
-            buffer: { label: "Buffer", options: [FRAMEBUFFER_ALBEDO, FRAMEBUFFER_NORMAL, FRAMEBUFFER_DEPTH, FRAMEBUFFER_RESULT], value: FRAMEBUFFER_RESULT }
+            buffer: { label: "Buffer", options: [FRAMEBUFFER_ALBEDO, FRAMEBUFFER_NORMAL, FRAMEBUFFER_POSITION, FRAMEBUFFER_DEPTH, FRAMEBUFFER_RESULT], value: FRAMEBUFFER_RESULT }
         }
     }, [])
 
@@ -93,6 +98,17 @@ export default function ControlsProvider({ children }: {
             ambientStrength: {
                 label: "Ambient Intensity",
                 value: DEFAULT_VALUES.lightingControls.ambientStrength,
+                min: 0.0,
+                max: 1.0,
+                step: 0.05
+            },
+            sunColor: {
+                label: "Sun Color",
+                value: DEFAULT_VALUES.lightingControls.sunColor
+            },
+            sunStrength: {
+                label: "Sun Intensity",
+                value: DEFAULT_VALUES.lightingControls.sunStrength,
                 min: 0.0,
                 max: 1.0,
                 step: 0.05
@@ -123,10 +139,9 @@ export default function ControlsProvider({ children }: {
         setFramebufferControls(DEFAULT_VALUES.framebufferControls)
     }
 
-    const applySourceImagePreset = () => {
-        setPixelationControls({
-            ...pixelationControls,
-            enabled: false
+    const applyAlbedoBufferPreset = () => {
+        setFramebufferControls({
+            buffer: FRAMEBUFFER_ALBEDO
         })
     }
 
@@ -149,7 +164,7 @@ export default function ControlsProvider({ children }: {
             cameraControls,
             framebufferControls,
             reset,
-            applySourceImagePreset,
+            applyAlbedoBufferPreset,
             applyDepthBufferPreset,
             applyNormalBufferPreset
         }}>

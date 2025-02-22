@@ -21,20 +21,20 @@ export default function PlaygroundControls() {
 
     const effects: EffectButton[] = [
         {
-            label: "Source Image",
+            label: "Albedo Buffer",
             description: "The scene, before pixelation, is rendered with full resolution. While it might not intuitively make sense to render the scene in high-resolution before pixelizing it, capturing the finer details of color, depth and normals up-front pays dividends later.",
-            onSelect: controls.applySourceImagePreset
+            onSelect: controls.applyAlbedoBufferPreset
         },
         {
             label: "Depth Buffer",
             description: "The depth buffer stores the distance from the camera the scene is at each pixel. The GPU uses this to determine what 3D objects are in the front of the scene but it also gives us valuable information for some of our post-processing effects.",
             onSelect: controls.applyDepthBufferPreset
         },
-        // {
-        //     label: "Normal Buffer",
-        //     description: "The normal buffer stores the direction the surface found at each pixel is facing. This gives us valuable information for both lighting and post-processing effects.",
-        //     onSelect: controls.applyNormalBufferPreset
-        // }
+        {
+            label: "Normal Buffer",
+            description: "The normal buffer stores the direction the surface found at each pixel is facing. This gives us valuable information for both lighting and post-processing effects.",
+            onSelect: controls.applyNormalBufferPreset
+        }
     ]
 
     return (

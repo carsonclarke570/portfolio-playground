@@ -4,8 +4,8 @@ import { Canvas, extend, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from 'three'
 import { degToRad } from "three/src/math/MathUtils.js";
 import CameraRig from "./CameraRig";
-import { useEffect, useMemo, useRef } from "react";
-import { FRAMEBUFFER_ALBEDO, FRAMEBUFFER_DEPTH, FRAMEBUFFER_NORMAL, useControlScheme } from "@/providers/controls";
+import { useEffect, useMemo } from "react";
+import { FRAMEBUFFER_ALBEDO, FRAMEBUFFER_DEPTH, FRAMEBUFFER_NORMAL, FRAMEBUFFER_POSITION, useControlScheme } from "@/providers/controls";
 import { Instance, Instances } from "@react-three/drei";
 import { TILE_SIDE_LENGTH_WORLD } from "@/utils/constants";
 import { useSwipeable } from "react-swipeable";
@@ -18,7 +18,6 @@ import { GrassMaterial } from "./material/grass";
 
 export default function ThreeCanvas() {
 
-    const controls = useControlScheme()
     const { rotateLeft, rotateRight } = useCameraControls()
 
     const swipeHandlers = useSwipeable({
@@ -34,12 +33,6 @@ export default function ThreeCanvas() {
         >
             <CameraRig distance={15} />
             <Scene />
-
-            {/* PostFX */}
-            {/* <>
-                {controls.framebufferControls.showDepth && <DepthDebugView texelSize={controls.pixelationControls.texelSize} tileTexelWidth={controls.pixelationControls.tileTexelWidth} />}
-            </> */}
-
         </Canvas>
     )
 }
@@ -99,12 +92,18 @@ function TileMap() {
 function Scene() {
     const { gl } = useThree()
     const { pixelationControls, framebufferControls } = useControlScheme()
+    const { subpixelOffset } = useCameraControls()
     const { displayWidth, displayHeight, internalWidth, internalHeight } = useResolution(pixelationControls.texelSize, pixelationControls.tileTexelWidth)
 
     const gBuffer = useGBuffer(displayWidth, displayHeight)
-    const resultBuffer = useResultBuffer(internalWidth, internalHeight)
+    const resultBuffer = useResultBuffer(
+        pixelationControls.enabled ? internalWidth : displayWidth,
+        pixelationControls.enabled ? internalHeight : displayHeight
+    )
 
-    const uvOffset = new THREE.Vector2(0, 0)
+    const uvOffset = useMemo(() => {
+        return subpixelOffset.clone().multiplyScalar(pixelationControls.texelSize).divide(new THREE.Vector2(displayWidth, displayHeight))
+    }, [subpixelOffset, displayWidth, displayHeight, pixelationControls.texelSize])
 
     const resultTexture = useMemo(() => {
         switch (framebufferControls.buffer) {
@@ -112,6 +111,8 @@ function Scene() {
                 return gBuffer.textures[0]
             case FRAMEBUFFER_NORMAL:
                 return gBuffer.textures[1]
+            case FRAMEBUFFER_POSITION:
+                return gBuffer.textures[2]
             case FRAMEBUFFER_DEPTH:
                 return gBuffer.depthTexture
             default:
@@ -156,7 +157,7 @@ function Scene() {
         scene.add(quad)
 
         return scene
-    }, [resultBuffer, uvOffset])
+    }, [resultBuffer, uvOffset, resultTexture])
 
     // Setup GL Context
     useEffect(() => {
@@ -165,7 +166,6 @@ function Scene() {
     }, [gl])
 
     useFrame(() => {
-        // 2. Render the fullscreen quad with the pixelated texture.
         gl.setRenderTarget(null)
         gl.setSize(displayWidth, displayHeight)
         gl.render(resultScene, resultCamera)
@@ -174,8 +174,10 @@ function Scene() {
 
     return (
         <DeferredGeometryPass gBuffer={gBuffer}>
+            {/* Scene */}
             <TileMap />
 
+            {/* Lighting */}
             <DeferredLightingPass gBuffer={gBuffer} resultBuffer={resultBuffer} />
         </DeferredGeometryPass>
     )

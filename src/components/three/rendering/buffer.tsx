@@ -5,7 +5,7 @@ import * as THREE from 'three'
 export function useGBuffer(width: number, height: number): THREE.WebGLRenderTarget {
     return useMemo(() => {
         const gBuffer = new THREE.WebGLRenderTarget(width, height, {
-            count: 2,
+            count: 3,
             minFilter: THREE.NearestFilter,
             magFilter: THREE.NearestFilter,
             generateMipmaps: false,
@@ -16,6 +16,7 @@ export function useGBuffer(width: number, height: number): THREE.WebGLRenderTarg
 
         gBuffer.textures[0].name = 'gAlbedo';
         gBuffer.textures[1].name = 'gNormal';
+        gBuffer.textures[2].name = 'gPosition';
 
         return gBuffer;
 
