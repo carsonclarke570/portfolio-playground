@@ -1,6 +1,6 @@
 "use client"
 
-import { Leva, useControls } from "leva"
+import { folder, Leva, useControls } from "leva"
 import { createContext, useContext, useMemo } from "react"
 
 type FramebufferControls = {
@@ -19,6 +19,10 @@ type LightingControls = {
     ambientColor: string;
     sunStrength: number;
     sunColor: string;
+    count: number;
+    altPercent: number;
+    baseColor: string;
+    altColor: string;
 }
 
 type CameraControls = {
@@ -42,10 +46,14 @@ const DEFAULT_VALUES = {
         tileTexelHeight: 4
     },
     lightingControls: {
-        ambientStrength: 0.2,
+        ambientStrength: 0.0,
         ambientColor: '#ffffff',
-        sunStrength: 0.5,
+        sunStrength: 0.0,
         sunColor: '#ffffff',
+        count: 10,
+        baseColor: "#ffee86",
+        altColor: "#7cdcf7",
+        altPercent: 0.3
     },
     cameraControls: {
         moveSpeed: 0.05
@@ -112,7 +120,25 @@ export default function ControlsProvider({ children }: {
                 min: 0.0,
                 max: 1.0,
                 step: 0.05
-            }
+            },
+            'Fireflies': folder({
+                count: {
+                    label: "Count",
+                    value: DEFAULT_VALUES.lightingControls.count,
+                    min: 0,
+                    max: 10,
+                    step: 1,
+                },
+                altPercent: {
+                    label: "Alt Percent",
+                    value: DEFAULT_VALUES.lightingControls.altPercent,
+                    min: 0,
+                    max: 1,
+                    step: 0.01,
+                },
+                baseColor: { label: "Base Color", value: DEFAULT_VALUES.lightingControls.baseColor },
+                altColor: { label: "Alt Color", value: DEFAULT_VALUES.lightingControls.altColor },
+            })
         }
     }, [])
 

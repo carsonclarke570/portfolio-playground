@@ -14,7 +14,7 @@ import { DeferredGeometryPass } from "./rendering/DeferredGeometryPass";
 import { useGBuffer, useResultBuffer } from "./rendering/buffer";
 import { useResolution } from "@/utils/hooks";
 import { DeferredLightingPass } from "./rendering/DeferredLightningPass";
-import { GrassMaterial } from "./material/grass";
+import { GrassMaterial, InstancedGrassMaterial } from "./material/grass";
 
 export default function ThreeCanvas() {
 
@@ -47,6 +47,7 @@ const TILE_HEIGHT_MAP = [
     [1, 1, 1, 1, 1, 1, 1],
 ]
 
+extend({ InstancedGrassMaterial })
 extend({ GrassMaterial })
 
 function TileMap() {
@@ -67,7 +68,10 @@ function TileMap() {
     return (
         <Instances limit={instances}>
             <boxGeometry args={[1, tileHeight, 1]} />
-            <grassMaterial glslVersion={THREE.GLSL3} side={THREE.BackSide} />
+            <instancedGrassMaterial glslVersion={THREE.GLSL3} side={THREE.BackSide} uniforms={{
+                uLowColor: { value: new THREE.Vector3(0.184314, 0.282353, 0.192157) },
+                uHighColor: { value: new THREE.Vector3(0.52549, 0.717647, 0.396078) }
+            }} />
             {TILE_HEIGHT_MAP.map((row, z) => {
                 return row.map((height, x) => {
 
@@ -92,8 +96,13 @@ function TileMap() {
 function Scene() {
     const { gl } = useThree()
     const { pixelationControls, framebufferControls } = useControlScheme()
-    const { subpixelOffset } = useCameraControls()
+    // const { subpixelOffset } = useCameraControls()
     const { displayWidth, displayHeight, internalWidth, internalHeight } = useResolution(pixelationControls.texelSize, pixelationControls.tileTexelWidth)
+
+    const tileHeight = useMemo(() => {
+        const worldToTexelRatio = Math.SQRT2 / pixelationControls.tileTexelWidth;
+        return pixelationControls.tileTexelHeight * (worldToTexelRatio / Math.cos(degToRad(30)))
+    }, [pixelationControls.tileTexelHeight, pixelationControls.tileTexelWidth])
 
     const gBuffer = useGBuffer(displayWidth, displayHeight)
     const resultBuffer = useResultBuffer(
@@ -101,9 +110,9 @@ function Scene() {
         pixelationControls.enabled ? internalHeight : displayHeight
     )
 
-    const uvOffset = useMemo(() => {
-        return subpixelOffset.clone().multiplyScalar(pixelationControls.texelSize).divide(new THREE.Vector2(displayWidth, displayHeight))
-    }, [subpixelOffset, displayWidth, displayHeight, pixelationControls.texelSize])
+    // const uvOffset = useMemo(() => {
+    //     return subpixelOffset.clone().multiplyScalar(pixelationControls.texelSize).divide(new THREE.Vector2(displayWidth, displayHeight))
+    // }, [subpixelOffset, displayWidth, displayHeight, pixelationControls.texelSize])
 
     const resultTexture = useMemo(() => {
         switch (framebufferControls.buffer) {
@@ -118,7 +127,7 @@ function Scene() {
             default:
                 return resultBuffer.texture
         }
-    }, [framebufferControls])
+    }, [framebufferControls, gBuffer.depthTexture, gBuffer.textures, resultBuffer.texture])
 
     const resultCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1)
     const resultScene = useMemo(() => {
@@ -126,7 +135,7 @@ function Scene() {
         const quadMaterial = new THREE.ShaderMaterial({
             uniforms: {
                 tDiffuse: { value: resultTexture },
-                uOffset: { value: uvOffset }
+                uOffset: { value: new THREE.Vector2(0, 0) }
             },
             vertexShader: `
                 varying vec2 vUv;
@@ -157,7 +166,7 @@ function Scene() {
         scene.add(quad)
 
         return scene
-    }, [resultBuffer, uvOffset, resultTexture])
+    }, [resultTexture])
 
     // Setup GL Context
     useEffect(() => {
@@ -176,6 +185,13 @@ function Scene() {
         <DeferredGeometryPass gBuffer={gBuffer}>
             {/* Scene */}
             <TileMap />
+            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -tileHeight, 0]}>
+                <planeGeometry args={[40, 40]} />
+                <grassMaterial glslVersion={THREE.GLSL3} side={THREE.BackSide} uniforms={{
+                    uLowColor: { value: new THREE.Vector3(0.184314, 0.282353, 0.192157) },
+                    uHighColor: { value: new THREE.Vector3(0.52549, 0.717647, 0.396078) }
+                }} />
+            </mesh>
 
             {/* Lighting */}
             <DeferredLightingPass gBuffer={gBuffer} resultBuffer={resultBuffer} />
