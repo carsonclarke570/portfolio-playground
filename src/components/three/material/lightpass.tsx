@@ -1,5 +1,7 @@
 import * as THREE from 'three'
 
+export const MAX_FIREFLIES = 100;
+
 export const LightingMaterial = new THREE.ShaderMaterial({
     uniforms: {
         tAlbedo: { value: new THREE.Texture() },
@@ -31,7 +33,7 @@ export const LightingMaterial = new THREE.ShaderMaterial({
         uNumPointLights: { value: 0 },
         uDitherSize: { value: 1 },
         uDitherSpread: { value: 0.05 },
-        uDitherLevels: { value: 5 }
+        uDitherLevels: { value: 7.0 }
     },
     vertexShader: /* glsl */ `
         varying vec2 vUv;
@@ -74,7 +76,7 @@ export const LightingMaterial = new THREE.ShaderMaterial({
         uniform DirectionalLight uSun;
         uniform PointLight[4] uPointLights;
         uniform int uNumPointLights;
-        uniform Firefly[10] uFireflies;
+        uniform Firefly[${MAX_FIREFLIES}] uFireflies;
         uniform int uNumFireflies;
 
         uniform float ambientIntensity;
@@ -113,7 +115,7 @@ export const LightingMaterial = new THREE.ShaderMaterial({
             float attenuation = light.intensity * NdotL;
             vec3 diffuse = albedo * light.color;
 
-            return diffuse * attenuation;
+            return diffuse * attenuation * albedo;
         }
 
         void main() {
@@ -134,7 +136,7 @@ export const LightingMaterial = new THREE.ShaderMaterial({
             float particleMask = 0.0;
             vec3 particleMaskColor = vec3(1.0);
 
-            for (int i = 0; i < 10; i++) {
+            for (int i = 0; i < uNumFireflies; i++) {
                 vec3 fireflyPosition = uFireflies[i].position;
                 float strength = uFireflies[i].strength;
 
@@ -158,7 +160,6 @@ export const LightingMaterial = new THREE.ShaderMaterial({
                     vec3 lightDir = normalize(fireflyPosition - position);
 
                     float atten = (1.0 / (1.0 + 0.25 * distance * distance)) * max(dot(normal, lightDir), 0.0) * strength;
-                    // float adjustedAtten = floor(dithering(gl_FragCoord, atten) * 8.0) / 8.0;
 
                     vec3 diffuse = albedo * uFireflies[i].color;
                     if (atten > particleAttenuation) {
@@ -168,7 +169,7 @@ export const LightingMaterial = new THREE.ShaderMaterial({
                 }
             }
 
-            particleAttenuation = floor(dithering(gl_FragCoord, particleAttenuation) * 7.0) / 7.0;
+            particleAttenuation = floor(dithering(gl_FragCoord, particleAttenuation) * uDitherLevels) / uDitherLevels;
 
             vec3 particleLight = albedo * particleDiffuse * particleAttenuation;
             vec3 finalColor = mix(totalLight + particleLight, particleMaskColor, particleMask);

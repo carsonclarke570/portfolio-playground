@@ -4,9 +4,9 @@ import { Canvas, extend, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from 'three'
 import { degToRad } from "three/src/math/MathUtils.js";
 import CameraRig from "./CameraRig";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { FRAMEBUFFER_ALBEDO, FRAMEBUFFER_DEPTH, FRAMEBUFFER_NORMAL, FRAMEBUFFER_POSITION, useControlScheme } from "@/providers/controls";
-import { Instance, Instances } from "@react-three/drei";
+import { Instance, Instances, useGLTF } from "@react-three/drei";
 import { TILE_SIDE_LENGTH_WORLD } from "@/utils/constants";
 import { useSwipeable } from "react-swipeable";
 import { useCameraControls } from "@/providers/camera";
@@ -14,7 +14,8 @@ import { DeferredGeometryPass } from "./rendering/DeferredGeometryPass";
 import { useGBuffer, useResultBuffer } from "./rendering/buffer";
 import { useResolution } from "@/utils/hooks";
 import { DeferredLightingPass } from "./rendering/DeferredLightningPass";
-import { GrassMaterial, InstancedGrassMaterial } from "./material/grass";
+import { GrassTileMaterial, InstancedGrassTileMaterial } from "./material/grasstile";
+import { InstancedGrassMaterial } from "./material/grass";
 
 export default function ThreeCanvas() {
 
@@ -33,6 +34,7 @@ export default function ThreeCanvas() {
         >
             <CameraRig distance={15} />
             <Scene />
+            {/* <Stats showPanel={0} /> */}
         </Canvas>
     )
 }
@@ -47,12 +49,13 @@ const TILE_HEIGHT_MAP = [
     [1, 1, 1, 1, 1, 1, 1],
 ]
 
+extend({ InstancedGrassTileMaterial })
+extend({ GrassTileMaterial })
 extend({ InstancedGrassMaterial })
-extend({ GrassMaterial })
 
 function TileMap() {
 
-    const { pixelationControls } = useControlScheme()
+    const { pixelationControls, grassControls } = useControlScheme()
 
     const tileHeight = useMemo(() => {
         const worldToTexelRatio = Math.SQRT2 / pixelationControls.tileTexelWidth;
@@ -65,31 +68,83 @@ function TileMap() {
         }, 0)
     }, 0)
 
-    return (
-        <Instances limit={instances}>
-            <boxGeometry args={[1, tileHeight, 1]} />
-            <instancedGrassMaterial glslVersion={THREE.GLSL3} side={THREE.BackSide} uniforms={{
-                uLowColor: { value: new THREE.Vector3(0.184314, 0.282353, 0.192157) },
-                uHighColor: { value: new THREE.Vector3(0.52549, 0.717647, 0.396078) }
-            }} />
-            {TILE_HEIGHT_MAP.map((row, z) => {
-                return row.map((height, x) => {
+    const exposedGrassTilePositions = useMemo(() => {
+        return TILE_HEIGHT_MAP.reduce((all, row, z) => {
+            return all.concat(row.flatMap((y, x) => {
+                return [...Array(30).keys()].map(() => {
+                    const xPos = THREE.MathUtils.lerp(x - 3.5, x - 2.5, Math.random())
+                    const zPos = THREE.MathUtils.lerp(z - 3.5, z - 2.5, Math.random())
 
-                    return [...Array(height).keys()].map((y) => {
-                        const xPos = (x - 3) * TILE_SIDE_LENGTH_WORLD
-                        const yPos = y * tileHeight
-                        const zPos = (z - 3) * TILE_SIDE_LENGTH_WORLD
-
-                        return (
-                            <Instance
-                                key={`${x}-${z}-${y}`}
-                                position={[xPos, yPos, zPos]}
-                            />
-                        )
-                    })
+                    return {
+                        position: new THREE.Vector3(
+                            xPos * TILE_SIDE_LENGTH_WORLD,
+                            (y - 0.5) * tileHeight,
+                            zPos * TILE_SIDE_LENGTH_WORLD
+                        ),
+                        rotation: new THREE.Euler(0, Math.random() * Math.PI, 0)
+                    }
                 })
-            })}
-        </Instances>
+            }));
+        }, [] as { position: THREE.Vector3, rotation: THREE.Euler }[])
+    }, [tileHeight])
+
+    const { nodes } = useGLTF('./models/grass.glb')
+    const grassMesh = nodes["Plane003"] as THREE.Mesh
+
+    const grassTileMateriaRef = useRef<THREE.ShaderMaterial>(null)
+    const grassMateriaRef = useRef<THREE.ShaderMaterial>(null)
+
+    useEffect(() => {
+        if (grassTileMateriaRef.current) {
+            grassTileMateriaRef.current.uniforms["uLowColor"].value = new THREE.Color(grassControls.lowColor)
+            grassTileMateriaRef.current.uniforms["uHighColor"].value = new THREE.Color(grassControls.highColor)
+        }
+
+        if (grassMateriaRef.current) {
+            grassMateriaRef.current.uniforms["uLowColor"].value = new THREE.Color(grassControls.lowColor)
+            grassMateriaRef.current.uniforms["uHighColor"].value = new THREE.Color(grassControls.highColor)
+        }
+
+    }, [grassControls.lowColor, grassControls.highColor])
+
+    return (
+        <>
+            <Instances limit={instances}>
+                <boxGeometry args={[1, tileHeight, 1]} />
+                <instancedGrassTileMaterial glslVersion={THREE.GLSL3} side={THREE.BackSide} ref={grassTileMateriaRef} />
+                {TILE_HEIGHT_MAP.map((row, z) => {
+                    return row.map((height, x) => {
+
+                        return [...Array(height).keys()].map((y) => {
+                            const xPos = (x - 3) * TILE_SIDE_LENGTH_WORLD
+                            const yPos = y * tileHeight
+                            const zPos = (z - 3) * TILE_SIDE_LENGTH_WORLD
+
+                            return (
+                                <Instance
+                                    key={`${x}-${z}-${y}`}
+                                    position={[xPos, yPos, zPos]}
+                                />
+                            )
+                        })
+                    })
+                })}
+            </Instances>
+            <Instances limit={exposedGrassTilePositions.length}>
+                <primitive object={grassMesh.geometry} />
+                <instancedGrassMaterial glslVersion={THREE.GLSL3} side={THREE.DoubleSide} ref={grassMateriaRef} />
+                {exposedGrassTilePositions.map((grass, idx) => {
+                    return (
+                        <Instance
+                            key={`${idx}`}
+                            position={grass.position}
+                            scale={0.05}
+                            rotation={grass.rotation}
+                        />
+                    )
+                })}
+            </Instances>
+        </>
     )
 }
 
@@ -187,7 +242,7 @@ function Scene() {
             <TileMap />
             <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -tileHeight, 0]}>
                 <planeGeometry args={[40, 40]} />
-                <grassMaterial glslVersion={THREE.GLSL3} side={THREE.BackSide} uniforms={{
+                <grassTileMaterial glslVersion={THREE.GLSL3} side={THREE.BackSide} uniforms={{
                     uLowColor: { value: new THREE.Vector3(0.184314, 0.282353, 0.192157) },
                     uHighColor: { value: new THREE.Vector3(0.52549, 0.717647, 0.396078) }
                 }} />

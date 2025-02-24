@@ -1,10 +1,12 @@
 import { useEffect, useMemo } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
-import { LightingMaterial } from '../material/lightpass';
+import { LightingMaterial, MAX_FIREFLIES } from '../material/lightpass';
 import { useControlScheme } from '@/providers/controls';
 import { useResolution } from '@/utils/hooks';
-import { useFireflies } from './fireflies';
+import { DEFAULT_FIREFLY, Firefly, useFireflies } from './fireflies';
+
+const fireflyArray = new Array<Firefly>(MAX_FIREFLIES)
 
 export function DeferredLightingPass({ gBuffer, resultBuffer }: {
     gBuffer: THREE.WebGLRenderTarget,
@@ -22,9 +24,20 @@ export function DeferredLightingPass({ gBuffer, resultBuffer }: {
     }, [])
 
     useEffect(() => {
-        material.uniforms["uFireflies"].value = fireflies;
+        fireflyArray.fill(DEFAULT_FIREFLY)
+        fireflyArray.splice(0, fireflies.length, ...fireflies)
+
+        material.uniforms["uFireflies"].value = fireflyArray;
         material.uniforms["uNumFireflies"].value = fireflies.length;
     }, [fireflies, material.uniforms])
+
+    useEffect(() => {
+        material.uniforms["uDitherSize"].value = lightingControls.ditherSize;
+        material.uniforms["uDitherSpread"].value = lightingControls.ditherSpread;
+        material.uniforms["uDitherLevels"].value = lightingControls.ditherLevels;
+    }, [
+        material.uniforms, lightingControls.ditherSize, lightingControls.ditherSpread, lightingControls.ditherLevels
+    ])
 
     useEffect(() => {
         // BUFFERS

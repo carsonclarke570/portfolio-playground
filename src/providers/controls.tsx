@@ -1,5 +1,6 @@
 "use client"
 
+import { MAX_FIREFLIES } from "@/components/three/material/lightpass"
 import { folder, Leva, useControls } from "leva"
 import { createContext, useContext, useMemo } from "react"
 
@@ -23,6 +24,14 @@ type LightingControls = {
     altPercent: number;
     baseColor: string;
     altColor: string;
+    ditherSize: number;
+    ditherSpread: number;
+    ditherLevels: number;
+}
+
+type GrassControls = {
+    lowColor: string;
+    highColor: string;
 }
 
 type CameraControls = {
@@ -42,15 +51,18 @@ const DEFAULT_VALUES = {
     pixelationControls: {
         enabled: true,
         texelSize: 4,
-        tileTexelWidth: 24,
+        tileTexelWidth: 32,
         tileTexelHeight: 4
     },
     lightingControls: {
-        ambientStrength: 0.0,
+        ambientStrength: 0.1,
         ambientColor: '#ffffff',
-        sunStrength: 0.0,
+        sunStrength: 0.1,
         sunColor: '#ffffff',
         count: 10,
+        ditherSize: 1,
+        ditherSpread: 0.05,
+        ditherLevels: 7,
         baseColor: "#ffee86",
         altColor: "#7cdcf7",
         altPercent: 0.3
@@ -58,6 +70,10 @@ const DEFAULT_VALUES = {
     cameraControls: {
         moveSpeed: 0.05
     },
+    grassControls: {
+        lowColor: "#e3ffe7",
+        highColor: "#bf9c8f"
+    }
 }
 
 const ControlsContext = createContext<{
@@ -65,6 +81,7 @@ const ControlsContext = createContext<{
     pixelationControls: PixelationControls,
     lightingControls: LightingControls,
     cameraControls: CameraControls,
+    grassControls: GrassControls,
     reset: () => void,
     applyAlbedoBufferPreset: () => void,
     applyDepthBufferPreset: () => void,
@@ -126,7 +143,7 @@ export default function ControlsProvider({ children }: {
                     label: "Count",
                     value: DEFAULT_VALUES.lightingControls.count,
                     min: 0,
-                    max: 10,
+                    max: MAX_FIREFLIES,
                     step: 1,
                 },
                 altPercent: {
@@ -138,6 +155,11 @@ export default function ControlsProvider({ children }: {
                 },
                 baseColor: { label: "Base Color", value: DEFAULT_VALUES.lightingControls.baseColor },
                 altColor: { label: "Alt Color", value: DEFAULT_VALUES.lightingControls.altColor },
+            }),
+            'Dithering': folder({
+                ditherSize: { label: "Dither Size", value: DEFAULT_VALUES.lightingControls.ditherSize, min: 1, max: 4, step: 1 },
+                ditherSpread: { label: "Dither Spread", value: DEFAULT_VALUES.lightingControls.ditherSpread, min: 0, max: 1, step: 0.001 },
+                ditherLevels: { label: "Dither Levels", value: DEFAULT_VALUES.lightingControls.ditherLevels, min: 1, max: 16, step: 1 }
             })
         }
     }, [])
@@ -153,8 +175,17 @@ export default function ControlsProvider({ children }: {
         }
     }, [])
 
-    const [pixelationControls, setPixelationControls] = useControls('Pixelation', () => pixelationOptions)
+    const grassOptions = useMemo(() => {
+        return {
+            lowColor: { label: "Low Color", value: DEFAULT_VALUES.grassControls.lowColor },
+            highColor: { label: "High Color", value: DEFAULT_VALUES.grassControls.highColor }
+        }
+    }, [])
+
+
     const [lightingControls, setLightingControls] = useControls('Lighting', () => lightingOptions)
+    const [grassControls, setGrassControls] = useControls('Grass', () => grassOptions)
+    const [pixelationControls, setPixelationControls] = useControls('Pixelation', () => pixelationOptions)
     const [cameraControls, setCameraControls] = useControls('Camera', () => cameraOptions)
     const [framebufferControls, setFramebufferControls] = useControls('Framebuffers', () => framebufferOptions)
 
@@ -163,6 +194,7 @@ export default function ControlsProvider({ children }: {
         setLightingControls(DEFAULT_VALUES.lightingControls)
         setCameraControls(DEFAULT_VALUES.cameraControls)
         setFramebufferControls(DEFAULT_VALUES.framebufferControls)
+        setGrassControls(DEFAULT_VALUES.grassControls)
     }
 
     const applyAlbedoBufferPreset = () => {
@@ -189,6 +221,7 @@ export default function ControlsProvider({ children }: {
             lightingControls,
             cameraControls,
             framebufferControls,
+            grassControls,
             reset,
             applyAlbedoBufferPreset,
             applyDepthBufferPreset,
