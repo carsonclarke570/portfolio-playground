@@ -150,7 +150,7 @@ function TileMap() {
 
 function Scene() {
     const { gl } = useThree()
-    const { pixelationControls, framebufferControls } = useControlScheme()
+    const { pixelationControls, framebufferControls, grassControls } = useControlScheme()
     // const { subpixelOffset } = useCameraControls()
     const { displayWidth, displayHeight, internalWidth, internalHeight } = useResolution(pixelationControls.texelSize, pixelationControls.tileTexelWidth)
 
@@ -164,6 +164,16 @@ function Scene() {
         pixelationControls.enabled ? internalWidth : displayWidth,
         pixelationControls.enabled ? internalHeight : displayHeight
     )
+
+    const grassMateriaRef = useRef<THREE.ShaderMaterial>(null)
+
+    useEffect(() => {
+        if (grassMateriaRef.current) {
+            grassMateriaRef.current.uniforms["uLowColor"].value = new THREE.Color(grassControls.lowColor)
+            grassMateriaRef.current.uniforms["uHighColor"].value = new THREE.Color(grassControls.highColor)
+        }
+
+    }, [grassControls.lowColor, grassControls.highColor])
 
     // const uvOffset = useMemo(() => {
     //     return subpixelOffset.clone().multiplyScalar(pixelationControls.texelSize).divide(new THREE.Vector2(displayWidth, displayHeight))
@@ -236,16 +246,15 @@ function Scene() {
 
     }, 2)
 
+
+
     return (
         <DeferredGeometryPass gBuffer={gBuffer}>
             {/* Scene */}
             <TileMap />
             <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -tileHeight, 0]}>
                 <planeGeometry args={[40, 40]} />
-                <grassTileMaterial glslVersion={THREE.GLSL3} side={THREE.BackSide} uniforms={{
-                    uLowColor: { value: new THREE.Vector3(0.184314, 0.282353, 0.192157) },
-                    uHighColor: { value: new THREE.Vector3(0.52549, 0.717647, 0.396078) }
-                }} />
+                <grassTileMaterial glslVersion={THREE.GLSL3} side={THREE.BackSide} ref={grassMateriaRef} />
             </mesh>
 
             {/* Lighting */}
